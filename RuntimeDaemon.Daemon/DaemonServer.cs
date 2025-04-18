@@ -1,4 +1,5 @@
-﻿using System.IO.Pipes;
+﻿using System.Diagnostics;
+using System.IO.Pipes;
 using System.Text;
 
 using RuntimeDaemon.Application;
@@ -21,11 +22,11 @@ internal static class DaemonServer
         using var server = new NamedPipeServerStream("runtime-daemon", PipeDirection.InOut);
         server.WaitForConnection();
 
-        using var reader = new StreamReader(server, Encoding.UTF8);
+        using var reader = new StreamReader(server, Encoding.ASCII);
         var line = reader.ReadLine();
         Console.WriteLine($"Received: {line}");
 
-        using var writer = new StreamWriter(server, Encoding.UTF8);
+        using var writer = new StreamWriter(server, Encoding.ASCII);
         if (line == null)
         {
             writer.WriteLine("Please provide an assembly to execute");
@@ -34,10 +35,9 @@ internal static class DaemonServer
         else
         {
             var (path, args) = DeserializeArgs(line);
-            var task = ExecuteAssembly(path, args);
-            task.Wait();
+            var result = ExecuteAssemblyWithPerformanceLogging(path, args);
 
-            var msg = task.Result ? "Executed assembly" : "Unable to execute assembly";
+            var msg = result ? "Executed assembly" : "Unable to execute assembly";
             writer.WriteLine(msg);
             writer.Flush();
         }
@@ -51,6 +51,7 @@ internal static class DaemonServer
 
         return (path, args);
     }
+
 
     private static async Task<bool> ExecuteAssembly(string path, string[] args)
     {
@@ -70,5 +71,25 @@ internal static class DaemonServer
         }
 
         return true;
+    }
+
+    private static bool ExecuteAssemblyWithWait(string path, string[] args)
+    {
+        var task = ExecuteAssembly(path, args);
+        task.Wait();
+
+        return task.Result;
+    }
+
+    private static bool ExecuteAssemblyWithPerformanceLogging(string path, string[] args)
+    {
+        var sw = new Stopwatch();
+        sw.Start();
+
+        var result = ExecuteAssemblyWithWait(path, args);
+
+        Console.WriteLine($"Executed assembly in {sw.ElapsedMilliseconds}ms");
+
+        return result;
     }
 }

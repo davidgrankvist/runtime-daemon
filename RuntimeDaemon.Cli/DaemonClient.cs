@@ -11,12 +11,12 @@ internal class DaemonClient
         var client = new NamedPipeClientStream(".", "runtime-daemon", PipeDirection.InOut);
         client.Connect();
 
-        var writer = new StreamWriter(client, Encoding.UTF8);
+        var writer = new StreamWriter(client, Encoding.ASCII);
         var payload = SerializeArgs(assemblyPath, assemblyArgs);
         writer.WriteLine(payload);
         writer.Flush();
 
-        var reader = new StreamReader(client, Encoding.UTF8);
+        var reader = new StreamReader(client, Encoding.ASCII);
         var line = reader.ReadLine();
 
         Console.WriteLine($"Server responded with: {line}");
