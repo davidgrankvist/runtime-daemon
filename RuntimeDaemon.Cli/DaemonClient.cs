@@ -2,6 +2,7 @@
 using System.Text;
 
 namespace RuntimeDaemon.Cli;
+
 internal class DaemonClient
 {
     public static void RequestExecution(string assemblyPath, string[] assemblyArgs)

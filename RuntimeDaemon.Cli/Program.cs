@@ -13,12 +13,6 @@ internal class Program
         var cmd = args[0];
         switch (cmd)
         {
-            case "start":
-                Console.WriteLine("Start is not implemented yet");
-                break;
-            case "stop":
-                Console.WriteLine("Stop is not implemented yet");
-                break;
             case "exec":
                 if (args.Length >= 2)
                 {
@@ -40,11 +34,8 @@ internal class Program
     private static void PrintHelp()
     {
         const string helpText = @"
-Start the daemon:
-runtime-daemon start
-
-Stop the daemon:
-runtime-daemon stop
+Launch the daemon:
+runtime-daemon-d
 
 Request daemon to execute an assembly:
 runtime-daemon exec <assembly path> <optional args to assembly>
