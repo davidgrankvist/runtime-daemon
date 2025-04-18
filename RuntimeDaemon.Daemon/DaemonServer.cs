@@ -37,7 +37,7 @@ internal static class DaemonServer
             var (path, args) = DeserializeArgs(line);
             var result = ExecuteAssemblyWithPerformanceLogging(path, args);
 
-            var msg = result ? "Executed assembly" : "Unable to execute assembly";
+            var msg = result ? "OK" : "FAIL";
             writer.WriteLine(msg);
             writer.Flush();
         }

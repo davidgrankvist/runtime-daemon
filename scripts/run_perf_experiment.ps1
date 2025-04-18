@@ -1,3 +1,12 @@
+# This performance test compares three different executions:
+# 1. A standalone sample exe.
+# 2. A C# client that requests the daemon to run the sample DLL. This client is built with AOT.
+# 3. A C client that requests the daemon to run the sample DLL.
+#
+# Binaries are copied to testTemp in order to:
+# 1. avoid daemon file locks when loading sample DLLs
+# 2. limit effects of caching in general
+
 # original build paths and names
 $DAEMON_EXE=".\RuntimeDaemon.Daemon\bin\Release\net9.0\RuntimeDaemon.Daemon.exe"
 $CS_CLIENT_PATH=".\RuntimeDaemon.Cli\bin\Release\net9.0\publish"
@@ -6,10 +15,6 @@ $SAMPLE_CLIENT_PATH=".\RuntimeDaemon.SampleClient\bin\Release\net9.0"
 $SAMPLE_CLIENT_DLL="RuntimeDaemon.SampleClient.dll"
 $SAMPLE_CLIENT_EXE="RuntimeDaemon.SampleClient.exe"
 $C_CLIENT=".\bin\runtime-daemon.exe"
-
-# Copies of binaries to:
-# 1. avoid daemon file locks when loading sample DLLs
-# 2. limit effects of caching in general
 
 # Sample client executable
 $SAMPLE_CLIENT_PATH_STANDALONE="testTemp\sample_standalone"
@@ -57,7 +62,7 @@ function RunExperiment {
     param (
         [string] $Message,
         [string] $Command,
-        [string[]] $CommandArgs
+        [string] $CommandArgs
     )
 
     echo ""
@@ -66,14 +71,12 @@ function RunExperiment {
     echo "Arguments: $CommandArgs"
     echo ""
 
-    echo ""
-    echo "Measuring the following command"
-    echo ""
-    echo "$Command $CommandArgs"
-    echo ""
-
     Measure-Command {
-        $process = Start-Process -FilePath $Command -ArgumentList $CommandArgs -NoNewWindow -PassThru
+        $process = Start-Process `
+            -FilePath $Command `
+            -ArgumentList $CommandArgs `
+            -NoNewWindow `
+            -PassThru
         $process.WaitForExit();
     }
 
@@ -83,32 +86,42 @@ function RunExperiment {
 echo ""
 echo "%%%%%%%%%%%% PREPARING ARTIFACTS %%%%%%%%%%%%%%%%"
 echo ""
-PrepareArtifacts
 
-echo ""
-echo "%%%%%%%%%%%% STARTING DAEMON %%%%%%%%%%%%%%%%"
-echo ""
+PrepareArtifacts
 
 echo ""
 echo "%%%%%%%%%%%% RUNNING EXPERIMENTS %%%%%%%%%%%%%%%%"
 echo ""
-echo "Starting daemon"
-echo ""
-$daemonProcess = Start-Process -FilePath $DAEMON_EXE -RedirectStandardOut $DAEMON_LOG -RedirectStandardError $DAEMON_LOG_ERR -NoNewWindow -PassThru
 
-RunExperiment -Message "Running sample client standalone" -Command $STANDALONE_EXE -CommandArgs "asdf"
-RunExperiment -Message "Running CS client" -Command $CS_CLIENT -CommandArgs "exec $CS_DLL asdf"
-RunExperiment -Message "Running C client" -Command $C_CLIENT -CommandArgs "exec $C_DLL asdf"
+$daemonProcess = Start-Process `
+    -FilePath $DAEMON_EXE `
+    -RedirectStandardOut $DAEMON_LOG `
+    -RedirectStandardError $DAEMON_LOG_ERR `
+    -NoNewWindow `
+    -PassThru
 
-echo ""
-echo "Shutting down daemon"
-echo ""
+RunExperiment `
+    -Message "Running sample client standalone" `
+    -Command $STANDALONE_EXE `
+    -CommandArgs "asdf"
+RunExperiment `
+    -Message "Running CS client" `
+    -Command $CS_CLIENT `
+    -CommandArgs "exec $CS_DLL asdf"
+RunExperiment `
+    -Message "Running C client" `
+    -Command $C_CLIENT `
+    -CommandArgs "exec $C_DLL asdf"
+
 Stop-Process -Id $daemonProcess.Id -Force
 
 echo "%%%%%%%%%%%% DAEMON LOGS %%%%%%%%%%%%%%%%"
 echo "=================================================== STDOUT"
+
 cat $DAEMON_LOG
+
 echo "=================================================== STDERR"
+
 cat $DAEMON_LOG_ERR
 
 echo ""
