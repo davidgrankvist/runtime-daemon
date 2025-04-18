@@ -15,6 +15,7 @@ static void printHelp() {
 
 int main(int argc, char* argv[]) {
     // -- parse args --
+
     if (!(argc >= 3 && strcmp(argv[1], "exec") == 0)) {
         printHelp();
         return 0;
